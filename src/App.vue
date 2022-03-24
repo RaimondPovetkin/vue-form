@@ -1,20 +1,171 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div>
+    <p>Введите данные карты:</p>
+    <div class="form">
+      <div class="form__content">
+        <div class="form__number-card">
+          <label>Number:</label>
+          <input type="text" placeholder="number" v-mask="'####-####-####-####'" v-model='form.userNumber' class="form__number-card-input">
+        </div>
+        <div class="form__data-card">
+          <div class="cvv__block">
+            <label>CVV:</label>
+            <input type="text" placeholder="CVV" v-mask="'###'" v-model="form.userCVV" class="form__cvv-card-input">
+          </div>
+          <div class="date__block">
+            <label>Date:</label>
+            <input type="tel" placeholder="mm/yy" class="form__date-card-input" v-mask="'##/##'" v-model="form.userDate"  name="">
+          </div>
+        </div>
+        <div class="form__name-card">
+          <label>Name:</label>
+          <input type="text" placeholder="NAME" class="form__name-card-input"  @input="form.userName = $event.target.value.toUpperCase()" v-model="v$.form.userName.$model" name="">
+          <div class="input-errors" v-for="(error, index) of v$.form.userName.$errors" :key="index">
+            <div class="error-msg">{{ error.$message }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="main__button" @click="submitChanges">
+      <input class="button"  type="button" value="Отправить">
+    </div>
+    <p></p>
+  </div>
 </template>
 
+
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import axios from 'axios'
+import useVuelidate from '@vuelidate/core'
+import { required } from '@vuelidate/validators'
+
+export function validName(name) {
+  let validNamePattern = new RegExp("^[A-Z]+(?:[-'\\s][A-Z]+)*$");
+  if (validNamePattern.test(name)){
+    return true;
+  }
+  return false;
+}
 
 export default {
-  name: 'App',
-  components: {
-    HelloWorld
-  }
+  setup () {
+    return { v$: useVuelidate() }
+  },
+
+  data(){
+    return {
+      form:{
+        userName: '',
+        userNumber:'',
+        userCVV:'',
+        userDate:''
+      },
+      valid:1
+    };
+  },
+  validations() {
+    return {
+      form:{
+        userName: {
+          required, name_validation: {
+            $validator: validName,
+            $message: 'Только латинские буквы'
+          }
+        }
+      }
+    }
+  },
+  methods:{
+    submitChanges(){
+      this.valid=1
+
+      function regValid(str,reg) {
+        return (reg.test(str))
+      }
+
+      let data ={
+        number:this.form.userNumber,
+        cvv:this.form.userCVV,
+        date:this.form.userDate,
+        name:this.form.userName
+      }
+
+      let validCVVPattern = new RegExp("[0-9]{3}");
+      let validDatePattern = new RegExp("[0-9]{1,2}/[0-9]{1,2}");
+      let validNumberPattern = new RegExp("[0-9]{1,4}-[0-9]{1,4}-[0-9]{1,4}-[0-9]{1,4}")
+      let validSTRPattern = new RegExp("[^A-Z]")
+
+      /*проверка cvv регулярным*/
+      if(!regValid(this.form.userCVV,validCVVPattern))this.valid=false
+
+      /*проверка номера регулярным*/
+      if(!regValid(this.form.userNumber,validNumberPattern))this.valid=false
+
+      /*проверка даты регулярным*/
+      if(!regValid(this.form.userDate,validDatePattern))this.valid=false
+
+      /*проверка месяца*/
+      if(this.form.userDate.split('/')[0]>12){
+        this.valid=false
+      }
+
+      let nameArray=this.form.userName.split(' ')
+
+      if(nameArray.length !=2){
+        this.valid=false
+      }
+
+      /*проверка на строку*/
+      for (let i = 0; i < nameArray.length; i++) {
+        if(regValid(nameArray[i],validSTRPattern)){
+          this.valid=false
+        }
+      }
+
+
+      /*console.log( this.v$.form.userName.$errors)*/
+      let json = JSON.stringify(data);
+
+      if(this.valid){
+        axios.post(`http://127.0.0.1:5000/cards/`,json)
+            .then(response=>{
+              console.log(response);
+            })
+            .catch(error=>{
+              console.log(error);
+            })
+      }
+    }
+  },
+  watch: {
+
+  },
 }
+
 </script>
 
 <style>
+.error-msg{
+  color: red;
+}
+.cvv__block{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+*{
+  font-family: Geneva, Arial, Helvetica, sans-serif;
+}
+label{
+  font-size: 19px;
+  color:white;
+  font-weight: 600;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -22,5 +173,74 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
+}
+.form{
+  margin: 0 auto;
+  width: 50%;
+  height: 400px;
+  background-color: #42b983;
+  border-radius: 10px;
+  box-shadow: 0px 0px 27px 14px rgba(34, 60, 80, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.form__content{
+  width: 80%;
+  height: 80%;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: space-around;
+}
+.form__number-card-input{
+  border-radius: 5px;
+  border:none;
+  margin: 0px 10px;
+  width: 400px;
+  padding: 10px;
+}
+.form__name-card-input{
+  margin: 0px 10px;
+  width: 300px;
+  padding: 10px;
+  border-radius: 5px;
+  border:none;
+}
+.form__cvv-card-input{
+  margin: 0px 10px;
+  width: 100px;
+  padding: 10px;
+  border-radius: 5px;
+  border:none;
+}
+.form__data-card{
+  width: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+.form__date-card-input{
+  margin: 0px 10px;
+  width: 100px;
+  padding: 10px;
+  border-radius: 5px;
+  border:none;
+}
+.main__button{
+  margin-top: 50px;
+}
+.button{
+  padding: 20px;
+  background-color: #42b983;
+  color: aliceblue;
+  font-size: 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+.button:hover{
+  cursor: pointer;
+  background-color: #337f5e;
 }
 </style>
