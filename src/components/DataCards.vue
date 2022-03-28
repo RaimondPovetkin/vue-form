@@ -2,13 +2,18 @@
   <div class="center">
     <table>
       <tr><th>number</th><th>cvv</th><th>person</th><th>date</th></tr>
-      <tr v-for="item in info" :key="item.number"><td>{{item.number}}</td><td>{{item.cvv}}</td><td>{{item.person}}</td><td>{{item.end_data}}</td></tr>
+      <tr v-for="item in info" :key="item.number">
+        <td>{{item.number}}</td>
+        <td>{{item.cvv}}</td>
+        <td>{{item.person}}</td>
+        <td>{{item.end_data}} </td></tr>
     </table>
   </div>
 </template>
 
 <script>
 /*import {Axios} from "@/http-common";*/
+import moment from 'moment'
 
 export default {
   data() {
@@ -40,13 +45,14 @@ export default {
     },
     changeData(){
 
-        for(let item of this.cards.numbers){
-          let e=0
-          for(let i = 0; i < item.length; i += 4) {
-            e=item.splice(i, 0, "-")
-          }
-          console.log(e)
-        }
+      let mainArr = JSON.parse(JSON.stringify(this.info)).cards
+
+      for (let key in mainArr){
+        mainArr[key].number = (mainArr[key].number+"").match(/.{1,4}/g).join('-')
+        mainArr[key].end_data=moment(mainArr[key].end_data).format('MM/YY')
+      }
+
+      this.info=mainArr
 
     }
   },
