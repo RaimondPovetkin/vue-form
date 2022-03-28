@@ -11,10 +11,16 @@
           <div class="cvv__block">
             <label>CVV:</label>
             <input type="text" placeholder="CVV" v-mask="'###'" v-model="form.userCVV" class="form__cvv-card-input">
+            <div class="input-errors" >
+              <div class="error-msg">{{ this.form.cvvError}}</div>
+            </div>
           </div>
           <div class="date__block">
             <label>Date:</label>
             <input type="tel" placeholder="mm/yy" class="form__date-card-input" v-mask="'##/##'" v-model="form.userDate"  name="">
+            <div class="input-errors" >
+              <div class="error-msg">{{ this.form.dateError}}</div>
+            </div>
           </div>
         </div>
         <div class="form__name-card">
@@ -35,9 +41,10 @@
 
 
 <script>
-import axios from 'axios'
-import useVuelidate from '@vuelidate/core'
-import { required } from '@vuelidate/validators'
+import {Axios} from '@/http-common';
+import useVuelidate from '@vuelidate/core';
+import { required } from '@vuelidate/validators';
+
 
 export function validName(name) {
   let validNamePattern = new RegExp("^[A-Z]+(?:[-'\\s][A-Z]+)*$");
@@ -58,7 +65,9 @@ export default {
         userName: '',
         userNumber:'',
         userCVV:'',
-        userDate:''
+        userDate:'',
+        cvvError:"Enter right CVV",
+        dateError:"Enter right date"
       },
       valid:1
     };
@@ -83,11 +92,14 @@ export default {
         return (reg.test(str))
       }
 
+      let dateArr=this.form.userDate.split('/')
+      dateArr[1]="20"+dateArr[1]
+
       let data ={
-        number:this.form.userNumber,
+        number : this.form.userNumber.split('-').join(''),
         cvv:this.form.userCVV,
-        date:this.form.userDate,
-        name:this.form.userName
+        end_data:dateArr[1]+"-"+dateArr[0]+"-01",
+        person:this.form.userName
       }
 
       let validCVVPattern = new RegExp("[0-9]{3}");
@@ -125,9 +137,14 @@ export default {
 
       /*console.log( this.v$.form.userName.$errors)*/
       let json = JSON.stringify(data);
+      console.log(json)
 
-      if(this.valid){
-        axios.post(`http://127.0.0.1:5000/cards/`,json)
+     if(this.valid){
+        Axios.post(`/cards/`,json, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
             .then(response=>{
               console.log(response);
             })
@@ -135,6 +152,18 @@ export default {
               console.log(error);
             })
       }
+
+/*      const configHeaders = {
+        "content-type": "application/json",
+      };
+
+      axios({
+        url: '/cards/',
+        method: 'post',
+        data: json,
+        headers: configHeaders.headers
+      })*/
+
     }
   },
   watch: {
